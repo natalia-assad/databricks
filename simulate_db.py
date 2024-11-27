@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import time
 import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, exc
@@ -50,12 +51,30 @@ def insert_data_to_db(df, engine):
 
 # Função principal
 def main():
-    # Gerar dados
-    df = generate_dataframe()
     # Conectar ao banco de dados
     engine = create_db_connection()
-    # Inserir dados no banco de dados
-    insert_data_to_db(df, engine)
+    if engine is None:
+        return
+
+    start_time = time.time()  # Registrar o tempo de início
+
+    while True:
+        # Verificar se passaram 10 minutos (600 segundos)
+        elapsed_time = time.time() - start_time
+        if elapsed_time >= 120:
+            print("3 minutos se passaram, o loop será encerrado.")
+            break  # Interromper o loop após 10 minutos
+        
+        # Gerar dados novos a cada 1 minuto
+        df = generate_dataframe()
+        print(df.head())  # Adicione isso para verificar o DataFrame gerado
+        # Inserir dados no banco de dados
+        insert_data_to_db(df, engine)
+        
+        # Aguardar 1 minuto antes de gerar novos dados e inserir novamente
+        print('Aguardando a geração de novos dados')
+        time.sleep(20)
+        
 
 if __name__ == "__main__":
     main()
