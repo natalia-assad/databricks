@@ -42,7 +42,7 @@ def create_table(engine):
         print("Tabela criada com sucesso!")
 
 # Função para gerar o DataFrame com dados aleatórios
-def generate_dataframe(num_rows=50):
+def generate_dataframe(num_rows):
     # Intervalo de datas
     data_inicial = datetime(2024, 1, 1)
     data_final = datetime(2024, 11, 30)
@@ -88,22 +88,32 @@ def upsert_data(engine, df):
             conn.execute(sql, params)
         print("Upsert realizado com sucesso!")
 
-# Função principal para gerenciar a conexão e o fluxo
+# # Função principal para gerenciar a conexão e o fluxo
 def main():
     # Conectar ao banco de dados
     engine = create_engine_db()
     if not engine:
         print("Falha na conexão com o banco de dados.")
         return
-
     # Criar a tabela
     create_table(engine)
+    # Definir tempo de execução (2 minutos)
+    start_time = time.time()
+    elapsed_time = 0
+    first_run = True  # Controla o número de linhas a ser gerado na primeira iteração
 
-    # Gerar o DataFrame
-    df = generate_dataframe()
-
-    # Realizar o upsert
-    upsert_data(engine, df)
+    while elapsed_time < 120:  # 2 minutos em segundos
+        # Gerar o DataFrame com base na iteração
+        num_rows = 50 if first_run else 5  # 100 na primeira iteração, 5 nas subsequentes
+        df = generate_dataframe(num_rows)
+        # Realizar o upsert
+        upsert_data(engine, df)
+        # Após o primeiro loop, mudar para 5 linhas nas iterações subsequentes
+        first_run = False
+        # Esperar 1 segundo antes da próxima iteração
+        time.sleep(30)
+        # Atualizar o tempo de execução
+        elapsed_time = time.time() - start_time
 
 # Executando o fluxo completo
 if __name__ == "__main__":
