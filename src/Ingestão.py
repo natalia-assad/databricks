@@ -1,13 +1,15 @@
 # Databricks notebook source
+# DBTITLE 1,IMPORTS
 import delta
 
 # COMMAND ----------
 
+# DBTITLE 1,SETUP
 catalog = "bronze"
 schema = "transactions"
-tablename = "full_transaction"
-field_id = "transaction_id"
-timestamp_field = "action_timestamp"
+tablename = dbutils.widgets.get("full_transaction")
+field_id =  dbutils.widgets.get("transaction_id")
+timestamp_field =  dbutils.widgets.get("action_timestamp")
 
 # COMMAND ----------
 
@@ -36,6 +38,7 @@ else:
 
 # COMMAND ----------
 
+# DBTITLE 1,CDC
 df_cdc = spark.read.format("csv") \
     .option("header", True) \
     .load(f"/Volumes/raw/{schema}/cdc")
