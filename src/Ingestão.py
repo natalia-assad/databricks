@@ -7,9 +7,9 @@ import delta
 # DBTITLE 1,SETUP
 catalog = "bronze"
 schema = "transactions"
-tablename = dbutils.widgets.get("full_transaction")
-field_id =  dbutils.widgets.get("transaction_id")
-timestamp_field =  dbutils.widgets.get("action_timestamp")
+tablename = dbutils.widgets.get("tablename")
+field_id =  dbutils.widgets.get("field_id")
+timestamp_field =  dbutils.widgets.get("timestamp_field")
 
 # COMMAND ----------
 
