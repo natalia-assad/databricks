@@ -11,7 +11,7 @@ db_config = os.getenv('conn_string')
 
 # Configurações do S3
 s3_client = boto3.client('s3')
-bucket_name = 'simulatedbb-raw-data'
+bucket_name = 'lago-do-mago-raw-data'
 
 # Função para exportar o log
 def export_log_to_s3():
@@ -29,7 +29,7 @@ def export_log_to_s3():
     csv_buffer.seek(0)
 
     # Nome do arquivo com base na data e hora
-    file_name = f"cdc/log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    file_name = f"transactions/cdc/log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
     # Upload para o S3
     s3_client.put_object(Bucket=bucket_name, Key=file_name, Body=csv_buffer.getvalue())
