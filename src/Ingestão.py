@@ -3,28 +3,48 @@ import delta
 
 # COMMAND ----------
 
-df_full = spark.read.format("csv") \
-    .option("header", True) \
-    .load("/Volumes/raw/transactions/full-load")
+catalog = "bronze"
+schema = "transactions"
+tablename = "full_transaction"
+field_id = "transaction_id"
+timestamp_field = "action_timestamp"
 
-df_full.coalesce(1).write.format("delta").mode("overwrite").saveAsTable("bronze.transactions.full")
+# COMMAND ----------
+
+def table_exists(catalog,database,table):
+    count = (spark.sql(f"show tables from {catalog}.{database}")
+             .filter(f"database='{database}' and tableName='{tablename}'")
+             .count())
+    return count == 1
+
+# COMMAND ----------
+
+if not table_exists(catalog,schema,tablename):
+    print("Criando tabela")
+    df_full = spark.read.format("csv") \
+        .option("header", True) \
+        .load(f"/Volumes/raw/transactions/{tablename}")
+
+    df_full.coalesce(1).write.format("delta").mode("overwrite").saveAsTable(f"{catalog}.{schema}.`{tablename}`")
+else:
+    print("Tabela já existente")
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC select * from bronze.transactions.`full`
+# MAGIC select * from bronze.transactions.full_transaction
 
 # COMMAND ----------
 
 df_cdc = spark.read.format("csv") \
     .option("header", True) \
-    .load("/Volumes/raw/transactions/cdc")
+    .load(f"/Volumes/raw/{schema}/cdc")
 
-df_cdc.createOrReplaceTempView("transactions")
+df_cdc.createOrReplaceTempView(f"view_{schema}")
 
-query = '''
-select * from transactions
-qualify row_number() over (partition by transaction_id order by action_timestamp desc) = 1 '''
+query = f'''
+select * from view_{schema}
+qualify row_number() over (partition by {field_id} order by {timestamp_field} desc) = 1'''
 
 df_cdc_unique = spark.sql(query)
 
@@ -32,11 +52,11 @@ df_cdc_unique.display()
 
 # COMMAND ----------
 
-bronze = delta.DeltaTable.forName(spark,"bronze.transactions.full")
+bronze = delta.DeltaTable.forName(spark,f"{catalog}.{schema}.`{tablename}`")
 
 #UPSERT
 (bronze.alias('b')
-    .merge(df_cdc_unique.alias('cdc'), 'b.transaction_id = cdc.transaction_id')
+    .merge(df_cdc_unique.alias('cdc'), f'b.{field_id} = cdc.{field_id}')
     .whenMatchedUpdateAll(condition="cdc.action_type='UPDATE'")
     .whenNotMatchedInsertAll(condition="cdc.action_type='INSERT' or cdc.action_type='UPDATE' ")
     .execute()
@@ -45,4 +65,8 @@ bronze = delta.DeltaTable.forName(spark,"bronze.transactions.full")
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC select * from bronze.transactions.full
+# MAGIC select * from bronze.transactions.full_transaction
+
+# COMMAND ----------
+
+
